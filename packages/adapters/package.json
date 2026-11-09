@@ -1,0 +1,36 @@
+{
+  "name": "@nyven-stream/adapters",
+  "version": "0.1.0",
+  "description": "Universal StreamProducer contract, registry, and demo producers for NYVEN STREAM",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./demo": {
+      "types": "./dist/demo/index.d.ts",
+      "import": "./src/demo/index.ts",
+      "default": "./src/demo/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "test": "node --experimental-strip-types --experimental-loader ../../tests/ts-loader.mjs --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@nyven-stream/core": "0.1.0",
+    "@nyven-stream/protocol": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@nyven-stream/core",
+  "version": "0.1.0",
+  "description": "Stream Core \u2013 orchestration, state, dispatcher",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run --dir src"
+  },
+  "dependencies": {
+    "@nyven-stream/protocol": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
+}

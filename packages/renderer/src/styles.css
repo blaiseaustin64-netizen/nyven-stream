@@ -1,0 +1,107 @@
+/**
+ * NYVEN STREAM renderer — minimal design tokens & motion.
+ * Host apps may override CSS variables.
+ */
+
+:root {
+  --ns-accent: #0c8ce7;
+  --ns-accent-soft: rgba(12, 140, 231, 0.15);
+  --ns-surface: #121826;
+  --ns-surface-raised: #1a2234;
+  --ns-border: rgba(148, 163, 184, 0.12);
+  --ns-text: #e2e8f0;
+  --ns-text-muted: #94a3b8;
+  --ns-text-faint: #64748b;
+  --ns-success: #34d399;
+  --ns-error: #f87171;
+  --ns-warn: #fbbf24;
+  --ns-radius: 0.75rem;
+  --ns-font: Inter, system-ui, sans-serif;
+  --ns-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ns-pulse,
+  .ns-spin,
+  .ns-caret,
+  .ns-fade {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@keyframes ns-pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes ns-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ns-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.ns-pulse {
+  animation: ns-pulse-soft 2s ease-in-out infinite;
+}
+
+.ns-spin {
+  animation: ns-spin 0.8s linear infinite;
+}
+
+.ns-caret {
+  animation: ns-caret 1s step-end infinite;
+}
+
+.ns-fade {
+  animation: ns-fade-in 0.25s ease-out;
+}
+
+@keyframes ns-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fallback surface utilities if host forgets Tailwind tokens */
+.bg-surface {
+  background-color: var(--ns-page-bg, #0b0f19);
+}
+.bg-surface-raised,
+.bg-surface-raised\/50,
+.bg-surface-raised\/60,
+.bg-surface-raised\/80 {
+  background-color: var(--ns-surface, #121826);
+}
+.text-nyven-300 {
+  color: var(--ns-accent-soft-text, #7cc5fb);
+}
+.text-nyven-400 {
+  color: var(--ns-accent, #36a7f6);
+}
+.bg-nyven-400 {
+  background-color: var(--ns-accent, #36a7f6);
+}
+.border-nyven-500\/40 {
+  border-color: rgba(12, 140, 231, 0.4);
+}

@@ -1,0 +1,32 @@
+{
+  "name": "nyven-stream",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NYVEN STREAM - Universal, provider-independent streaming engine",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "node --experimental-strip-types --experimental-loader ./tests/ts-loader.mjs --test tests/*.node.test.ts",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "dev:playground": "npm run dev -w @nyven-stream/playground",
+    "dev:worker": "npm run dev -w @nyven-stream/worker",
+    "typecheck": "tsc -b --pretty false && npm run typecheck -w @nyven-stream/playground --if-present && npm run typecheck -w @nyven-stream/worker --if-present",
+    "test:node": "node --experimental-strip-types --experimental-loader ./tests/ts-loader.mjs --test tests/*.node.test.ts",
+    "test:vitest": "vitest run",
+    "clean": "node -e \"const fs=require('fs');const p=['packages/protocol/dist','packages/core/dist','packages/transport/dist','packages/adapters/dist','packages/renderer/dist'];for (const d of p){try{fs.rmSync(d,{recursive:true,force:true})}catch{}}\""
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5",
+    "@types/node": "^22.9.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

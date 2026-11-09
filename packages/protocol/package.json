@@ -1,0 +1,28 @@
+{
+  "name": "@nyven-stream/protocol",
+  "version": "0.1.0",
+  "description": "Versioned, strongly-typed event protocol for NYVEN STREAM",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run --dir src"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
+}
