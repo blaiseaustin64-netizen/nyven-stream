@@ -20,7 +20,14 @@ import {
   runProducer,
   ProducerNotFoundError,
   type CreateStreamRequest,
+  createWorkersAIChatProducer,
+  type WorkersAITextGenerationBinding,
 } from "@nyven-stream/adapters";
+
+interface Env {
+  AI: WorkersAITextGenerationBinding;
+  AI_MODEL?: string;
+}
 
 /** Stream instances (in-memory, per isolate) */
 const streamRegistry = new StreamRegistry();
@@ -224,7 +231,7 @@ function createLiveSseResponse(
 export default {
   async fetch(
     request: Request,
-    _env: unknown,
+    env: Env,
     ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
@@ -280,7 +287,11 @@ export default {
 
       let producer;
       try {
-        producer = producerRegistry.require(capability);
+        // Keep the demo registry for every other capability, but route normal
+        // chat through the real Cloudflare Workers AI binding.
+        producer = capability.toLowerCase() === "chat"
+          ? createWorkersAIChatProducer(env.AI, env.AI_MODEL)
+          : producerRegistry.require(capability);
       } catch (e) {
         if (e instanceof ProducerNotFoundError) {
           return errorResponse(

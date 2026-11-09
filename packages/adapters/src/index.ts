@@ -35,3 +35,6 @@ export {
   demoFinalOnlyProducer,
   registerDemoProducers,
 } from "./demo/index";
+
+export { createWorkersAIChatProducer } from "./providers/cloudflare-workers-ai";
+export type { WorkersAIMessage, WorkersAITextGenerationBinding } from "./providers/cloudflare-workers-ai";

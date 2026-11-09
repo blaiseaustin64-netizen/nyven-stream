@@ -4,7 +4,12 @@ compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"
+AI_MODEL = "@cf/qwen/qwen3.8-27b"
 
 # Free tier friendly – no Durable Objects or paid features required for basic streaming.
 # Streams are in-memory per isolate; for multi-isolate production use a Durable Object later.
+
+# Cloudflare Workers AI binding (available in code as env.AI)
+[ai]
+binding = "AI"
