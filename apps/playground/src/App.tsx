@@ -15,6 +15,7 @@ import {
 import { StreamView } from "@nyven-stream/renderer";
 import { ScenarioPicker, type ScenarioOption } from "./components/ScenarioPicker";
 import { Header } from "./components/Header";
+import { MessageInput } from "./components/MessageInput";
 import {
   checkWorkerHealth,
   connectWorkerSse,
@@ -27,33 +28,60 @@ const registry = createProducerRegistry();
 registerDemoProducers(registry);
 
 const SCENARIOS: ScenarioOption[] = [
-  { id: "chat", title: "Normal Chat", description: "Natural answer streaming" },
-  { id: "search", title: "Web Search", description: "Activity + sources + answer" },
-  { id: "planning", title: "Planning", description: "Nested plan steps" },
-  { id: "coding", title: "Code / Files", description: "File events + code" },
-  { id: "agent", title: "Nested Agent", description: "Agent + tools" },
-  { id: "error", title: "Error", description: "Safe error presentation" },
-  { id: "long", title: "Cancellation", description: "Long work — use Stop" },
-  { id: "final-only", title: "Final only", description: "No intermediate activity" },
+  {
+    id: "chat",
+    title: "Normal Chat",
+    description: "Workers AI (Worker mode) or demo producer (Local)",
+  },
+  { id: "search", title: "Web Search", description: "Demo: activity + sources + answer" },
+  { id: "planning", title: "Planning", description: "Demo: nested plan steps" },
+  { id: "coding", title: "Code / Files", description: "Demo: file events + code" },
+  { id: "agent", title: "Nested Agent", description: "Demo: agent + tools" },
+  { id: "error", title: "Error", description: "Demo: safe error presentation" },
+  { id: "long", title: "Cancellation", description: "Demo: long work — use Stop" },
+  { id: "final-only", title: "Final only", description: "Demo: no intermediate activity" },
 ];
 
 type Mode = "local" | "worker";
 
+/** Build the request input for a capability from the user message. */
+function buildInput(capability: string, message: string): unknown {
+  const text = message.trim();
+  if (capability === "chat") {
+    return {
+      prompt: text,
+      messages: [{ role: "user", content: text }],
+    };
+  }
+  if (capability === "search") {
+    return { query: text || "NYVEN STREAM architecture" };
+  }
+  // Other demo producers ignore input; pass message when present for future use.
+  return text ? { prompt: text } : {};
+}
+
 export default function App() {
-  const [mode, setMode] = useState<Mode>("local");
+  const [mode, setMode] = useState<Mode>("worker");
   const [state, setState] = useState<StreamViewState | null>(null);
   const [running, setRunning] = useState(false);
+  const [selectedId, setSelectedId] = useState<string>("chat");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
   const [eventLog, setEventLog] = useState<StreamEvent[]>([]);
   const [showLog, setShowLog] = useState(false);
   const [liveStream, setLiveStream] = useState<Stream | null>(null);
-  const [workerSession, setWorkerSession] = useState<WorkerStreamSession | null>(null);
+  const [workerSession, setWorkerSession] =
+    useState<WorkerStreamSession | null>(null);
   const [workerStatus, setWorkerStatus] = useState<string>("");
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const known = useMemo(() => new Set(registry.list()), []);
+
+  const selectedScenario = SCENARIOS.find((s) => s.id === selectedId);
+  const isRealAi = mode === "worker" && selectedId === "chat";
+  const requiresMessage = selectedId === "chat";
 
   useEffect(() => {
     if (mode !== "worker") {
@@ -105,12 +133,14 @@ export default function App() {
   const pushEventToState = useCallback((event: StreamEvent, streamId: string) => {
     setEventLog((prev) => [...prev, event]);
     setState((prev) =>
-      prev ? applyEvent(prev, event) : applyEvent(createEmptyState(streamId), event)
+      prev
+        ? applyEvent(prev, event)
+        : applyEvent(createEmptyState(streamId), event)
     );
   }, []);
 
   const runLocal = useCallback(
-    async (id: string) => {
+    async (id: string, input: unknown) => {
       abortController?.abort();
       liveStream?.cancel("superseded", "client");
 
@@ -147,7 +177,7 @@ export default function App() {
           producer,
           signal: ac.signal,
           capability: id,
-          input: id === "search" ? { query: "NYVEN STREAM architecture" } : {},
+          input,
         });
       } catch (err) {
         if ((err as Error).name !== "AbortError") console.error(err);
@@ -160,7 +190,7 @@ export default function App() {
   );
 
   const runWorker = useCallback(
-    async (id: string) => {
+    async (id: string, input: unknown) => {
       stop();
       setRunning(true);
       setActiveId(id);
@@ -178,11 +208,7 @@ export default function App() {
           return;
         }
 
-        const created = await createWorkerStream(
-          id,
-          id === "search" ? { query: "NYVEN STREAM architecture" } : {}
-        );
-
+        const created = await createWorkerStream(id, input);
         setState(createEmptyState(created.streamId));
 
         const session = connectWorkerSse(created.sseUrl, {
@@ -213,14 +239,33 @@ export default function App() {
     [pushEventToState, stop]
   );
 
-  const runCapability = useCallback(
-    (id: string) => {
-      if (!known.has(id) && mode === "local") return;
-      if (mode === "worker") void runWorker(id);
-      else void runLocal(id);
-    },
-    [known, mode, runLocal, runWorker]
-  );
+  const handleSend = useCallback(() => {
+    const id = selectedId;
+    if (!id) return;
+    if (!known.has(id) && mode === "local") return;
+
+    const trimmed = message.trim();
+    if (requiresMessage && !trimmed) {
+      setConnectionError("Enter a message before sending Normal Chat.");
+      return;
+    }
+
+    const input = buildInput(id, message);
+    // Clear input after a successful send kickoff
+    setMessage("");
+    setConnectionError(null);
+
+    if (mode === "worker") void runWorker(id, input);
+    else void runLocal(id, input);
+  }, [
+    selectedId,
+    known,
+    mode,
+    message,
+    requiresMessage,
+    runWorker,
+    runLocal,
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-surface text-slate-100">
@@ -229,7 +274,9 @@ export default function App() {
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 sm:py-8 flex flex-col gap-6">
         {/* Mode toggle */}
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="text-slate-500 text-xs uppercase tracking-wider">Mode</span>
+          <span className="text-slate-500 text-xs uppercase tracking-wider">
+            Mode
+          </span>
           <div className="inline-flex rounded-lg border border-slate-800 overflow-hidden">
             <button
               type="button"
@@ -263,6 +310,11 @@ export default function App() {
           {mode === "worker" && workerStatus && (
             <span className="text-xs text-emerald-400/90">{workerStatus}</span>
           )}
+          {isRealAi && (
+            <span className="text-xs text-emerald-400/90">
+              Normal Chat → Cloudflare Workers AI
+            </span>
+          )}
         </div>
 
         {connectionError && (
@@ -278,15 +330,39 @@ export default function App() {
           <aside className="lg:w-72 shrink-0">
             <ScenarioPicker
               scenarios={SCENARIOS}
-              activeId={activeId}
+              activeId={selectedId}
               running={running}
-              onSelect={runCapability}
+              onSelect={(id) => {
+                if (!running) setSelectedId(id);
+              }}
               onStop={stop}
               onReset={reset}
             />
+            <p className="mt-3 text-[11px] text-slate-600 leading-relaxed px-1">
+              Select a capability, type a message, then Send. In Worker mode,{" "}
+              <strong className="text-slate-400">Normal Chat</strong> uses the
+              real Workers AI binding — other capabilities stay as demos.
+            </p>
           </aside>
 
-          <section className="flex-1 min-w-0">
+          <section className="flex-1 min-w-0 space-y-4">
+            <MessageInput
+              value={message}
+              onChange={setMessage}
+              onSend={handleSend}
+              disabled={running}
+              realAi={isRealAi}
+              requireText={requiresMessage}
+              capabilityLabel={selectedScenario?.title}
+              placeholder={
+                isRealAi
+                  ? "Ask NYVEN anything… (Workers AI)"
+                  : selectedId === "chat"
+                    ? "Message for demo chat…"
+                    : "Optional note, then Send to run the demo…"
+              }
+            />
+
             {state ? (
               <StreamView state={state} onCancel={running ? stop : undefined} />
             ) : (
@@ -299,9 +375,14 @@ export default function App() {
                 </p>
                 <p className="text-sm max-w-md mx-auto leading-relaxed">
                   {mode === "worker"
-                    ? "Worker mode uses the real SSE pipeline. Start the Worker on port 8787, then pick a capability."
-                    : "Local mode runs demo producers in-browser through Stream Core and the shared renderer."}
+                    ? "Worker mode is connected to the SSE gateway. Choose Normal Chat, enter a message, and Send to stream a real Workers AI response."
+                    : "Local mode runs demo producers in-browser. Select a capability and Send."}
                 </p>
+                {activeId && (
+                  <p className="text-xs text-slate-500 mt-3">
+                    Last run: {activeId}
+                  </p>
+                )}
               </div>
             )}
           </section>
@@ -315,7 +396,8 @@ export default function App() {
             aria-expanded={showLog}
           >
             <span>
-              Event log <span className="text-slate-600">({eventLog.length})</span>
+              Event log{" "}
+              <span className="text-slate-600">({eventLog.length})</span>
             </span>
             <span className="text-xs">{showLog ? "Hide" : "Show"}</span>
           </button>
@@ -339,7 +421,8 @@ export default function App() {
       </main>
 
       <footer className="border-t border-slate-800/60 py-4 text-center text-xs text-slate-600">
-        NYVEN STREAM · {mode === "worker" ? "Worker SSE" : "Local"} · Renderer v0.1
+        NYVEN STREAM · {mode === "worker" ? "Worker SSE" : "Local"}
+        {isRealAi ? " · Workers AI chat" : ""} · Renderer v0.1
       </footer>
     </div>
   );
